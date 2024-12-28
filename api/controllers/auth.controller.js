@@ -39,7 +39,7 @@ export const signin = async (req, res, next) => {
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...otherDetails } = validUser._doc;
     res
-    .cookie('access_token', token, { httpOnly: true, expires: new Date(Date.now() + 24 * 60 * 60 * 1000) })
+    .cookie('access_token', token, { httpOnly: true, expires: new Date(Date.now() + 24 * 60 * 60 * 1000), secure: true, sameSite: "none" })
     .status(200)
     .json({
       message: "User logged in successfully",
