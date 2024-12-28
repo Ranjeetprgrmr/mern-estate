@@ -6,7 +6,7 @@ import {
   signInSuccess,
   signInFailure,
 } from "../redux/user/userSlice";
-import './../index.css';
+
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
