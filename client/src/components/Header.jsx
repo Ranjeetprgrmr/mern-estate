@@ -1,9 +1,22 @@
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { useEffect, useState } from "react";
+import { uploadImage } from "../redux/user/userSlice";
 
 export default function Header() {
-  const { currentUser } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const { currentUser, image } = useSelector((state) => state.user);
+
+  useEffect(() => {
+    const storedImage = localStorage.getItem("image");
+    if (storedImage) {
+      dispatch(uploadImage(storedImage));
+    } else {
+      dispatch(uploadImage());
+    }
+  }, []);
+
   return (
     <header className="bg-slate-200 shadow-md">
       <div className="flex justify-between items-center p-4 max-w-6xl mx-auto">
@@ -35,9 +48,11 @@ export default function Header() {
 
           <Link to="/profile">
             {currentUser ? (
-              <img 
-              className="w-9 h-9 rounded-full"
-              src={currentUser.avatar} alt="profile" />
+              <img
+                className="w-9 h-9 rounded-full"
+                src={image || currentUser.avatar}
+                alt="profile"
+              />
             ) : (
               <li className="hidden sm:inline text-slate-700 hover:underline">
                 Sign in

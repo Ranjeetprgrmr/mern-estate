@@ -4,7 +4,9 @@ const initialState = {
     currentUser: null,
     error: null,
     loading: false,
+    image: null, // add this line to store the uploaded image
 };
+
 
 const userSlice = createSlice({
     name: 'user',
@@ -22,9 +24,13 @@ const userSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         },
+        uploadImage: (state, action) => {
+            state.image = action.payload;
+            
+          },
     }
 })
 
-export const { signInStart, signInSuccess, signInFailure } = userSlice.actions;
+export const { signInStart, signInSuccess, signInFailure,  uploadImage } = userSlice.actions;
 
 export default userSlice.reducer;
