@@ -12,9 +12,7 @@ export default function Header() {
     const storedImage = localStorage.getItem("image");
     if (storedImage) {
       dispatch(uploadImage(storedImage));
-    } else {
-      dispatch(uploadImage());
-    }
+    } 
   }, []);
 
   return (
