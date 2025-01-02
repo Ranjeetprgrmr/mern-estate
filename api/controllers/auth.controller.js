@@ -7,9 +7,8 @@ dotenv.config();
 
 export const signup = async (req, res, next) => {
   // console.log(req.body); let's destructure the request body and save those values in variables and save in the database
-
   const { username, email, password } = req.body;
-  const hashedPassword = bcryptjs.hashSync(password, 10);
+  const hashedPassword = await bcryptjs.hash(password, 10);
   const newUser = new User({
     username,
     email,
@@ -32,7 +31,7 @@ export const signin = async (req, res, next) => {
     if (!validUser) {
       return next(errorHandler(404, "User not found"));
     }
-    const validPassword = bcryptjs.compareSync(password, validUser.password);
+    const validPassword = await bcryptjs.compare(password, validUser.password);
     if (!validPassword) {
       return next(errorHandler(401, "wrong credentials!"));
     }
@@ -49,7 +48,7 @@ export const signin = async (req, res, next) => {
       .json({
         message: "User logged in successfully",
         // user: validUser,
-        details: otherDetails,
+        otherDetails,
       });
   } catch (error) {
     next(error);
@@ -62,6 +61,7 @@ export const google = async (req, res, next) => {
     if (user) {
       const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
       const { password, ...otherDetails } = user._doc;
+
       res
         .cookie("access_token", token, { httpOnly: true })
         .status(200)
@@ -70,6 +70,7 @@ export const google = async (req, res, next) => {
       const generatedPassword = Math.random().toString(36).slice(-8);
       +Math.random().toString(36).slice(-8);
       const hashedPassword = bcryptjs.hashSync(generatedPassword, 10);
+
       const newUser = new User({
         username:
           req.body.name.split(" ").join("").toLowerCase() +
@@ -78,13 +79,13 @@ export const google = async (req, res, next) => {
         password: hashedPassword,
         avatar: req.body.photo,
       });
+
       await newUser.save();
+
       const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET);
+
       const { password, ...otherDetails } = newUser._doc;
-      res
-        .cookie("access_token", token, { httpOnly: true })
-        .status(200)
-        .json(otherDetails);
+      res.cookie("access_token", token).status(200).json(otherDetails);
     }
   } catch (error) {
     next(error);

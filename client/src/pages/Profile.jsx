@@ -1,20 +1,23 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useRef, useState, useEffect } from "react";
 import { uploadImage } from "../redux/user/userSlice";
+import {
+  updateUserStart,
+  updateUserSuccess,
+  updateUserFailure,
+} from "../redux/user/userSlice";
 
 export default function Profile() {
   const fileRef = useRef(null);
-  const dispatch = useDispatch();
   // const [file, setFile] = useState(undefined);
   const [image, setImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [percentage, setPercentage] = useState(0);
-  const { currentUser } = useSelector((state) => state.user);
-
-  // const handleChange = (e) => {
-  //   setFormData({ ...formData, [e.target.id]: e.target.value });
-  // };
-  // console.log(formData);
+  const [formData, setFormData] = useState({});
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const { currentUser, loading, error } = useSelector((state) => state.user);
+  console.log("this is error", error);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const storedImage = localStorage.getItem("image");
@@ -31,12 +34,15 @@ export default function Profile() {
     reader.onload = () => {
       imageData = reader.result;
       setImage(imageData);
-      localStorage.setItem("image", imageData);
+      localStorage.setItem("avatar", imageData);
       dispatch(uploadImage(imageData));
       setPercentage(100); // Ensure progress is set to 100% on load
       setTimeout(() => {
         setIsUploading(false); // Hide the upload indicator
       }, 500); // Delay to simulate upload time
+
+      // Update formData with the new image
+      setFormData({ ...formData, avatar: imageData });
     };
     reader.onprogress = (e) => {
       const progress = (e.loaded / e.total) * 100;
@@ -45,10 +51,72 @@ export default function Profile() {
     reader.readAsDataURL(file);
   };
 
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
+  console.log("this is formData", formData);
+
+  //   Yes, this code snippet answers my previous question
+  // The fact that the access_token is being set as a cookie with the httpOnly flag set to true means that the cookie will be sent with every request to the server, including the fetch request.
+  // And, as you mentioned, the verifyToken middleware will be able to verify the access_token from the cookie and authenticate the user, even though the access_token is not being explicitly included in the fetch request.
+  // So, to answer my previous question: YES, that is correct! The cookie is being sent with the request and is being used to authenticate the user, which is why the access_token doesn't need to be explicitly included in the fetch request.
+
+  // If you mention the access_token in your fetch request, and it still says "invalid token", it's likely because the token is being sent in a different way than what the server is expecting.
+  // When you set the access_token as a cookie, the server expects to receive it as a cookie in the request headers. However, if you explicitly include the access_token in the fetch request, it's being sent as a separate header or parameter, which might not be what the server is expecting.
+  // In this case, the server might be rejecting the token because it's not being sent in the expected way. It's like the server is saying, "Hey, I'm expecting the token to be sent as a cookie, but you're sending it as a separate header. I don't recognize this token!"
+  // To fix this, you can try removing the explicit mention of the access_token from your fetch request, and let the cookie be sent automatically with the request. This should allow the server to recognize the token and authenticate the user correctly.
+
+  // I see what you're getting at now.
+  // Yes, that's correct. The access_token is being sent from the client-side as a cookie, and that's why you don't need to mention it explicitly in the handleSubmit function.
+  // When you set the access_token cookie on the server-side using res.cookie("access_token", token, { ... }), the cookie is being stored on the client-side (i.e., in the user's browser).
+  // Then, when you make a subsequent request to the server from the client-side (e.g., using the handleSubmit function), the cookie is automatically sent along with the request.
+  // So, in the handleSubmit function, you don't need to explicitly mention the access_token because it's already being sent as a cookie with the request.
+  // This is exactly what I said earlier: "the cookie is being sent with the request and is being used to authenticate the user".
+  // So, to summarize:
+  // The access_token cookie is being set on the server-side and stored on the client-side.
+  // When you make a subsequent request from the client-side, the cookie is automatically sent along with the request.
+  // You don't need to explicitly mention the access_token in the handleSubmit function because it's already being sent as a cookie with the request.
+  // Does that make sense?
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const avatar = localStorage.getItem("avatar");
+      const data = { ...formData, avatar };
+      dispatch(updateUserStart());
+      const res = await fetch(`/api/user/update/${currentUser._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+      // If the API returns a 401 Unauthorized response, this code will catch it and dispatch the updateUserFailure action.
+      if (!res.ok) {
+        const responseData = await res.json();
+        dispatch(updateUserFailure(responseData.message));
+        return;
+      }
+
+      const responseData = await res.json();
+
+      // If the API returns a 200 OK response, but the response data contains an error message (e.g., {"success": false, "message": "Invalid data"}), then this code will catch it and dispatch the updateUserFailure action.
+      if (responseData.success === false) {
+        dispatch(updateUserFailure(responseData.message));
+        return;
+      }
+      dispatch(updateUserSuccess(responseData));
+      setUpdateSuccess(true);
+    } catch (error) {
+      console.error("Error:", error.message);
+      dispatch(updateUserFailure(error.message));
+    }
+  };
+
   return (
     <div className="p-3 max-w-lg mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
-      <form className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           onChange={handleImageChange}
           type="file"
@@ -80,6 +148,7 @@ export default function Profile() {
           className="border p-3 rounded-lg"
           id="username"
           defaultValue={currentUser.username}
+          onChange={handleChange}
         />
         <input
           type="email"
@@ -87,21 +156,28 @@ export default function Profile() {
           className="border p-3 rounded-lg"
           id="email"
           defaultValue={currentUser.email}
+          onChange={handleChange}
         />
         <input
           type="password"
           placeholder="password"
           className="border p-3 rounded-lg"
           id="password"
+          onChange={handleChange}
         />
-        <button className="bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disables:opacity-80">
-          update
+        <button
+          disable={loading}
+          className="bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disables:opacity-80"
+        >
+          {loading ? "Loading..." : "Update"}
         </button>
       </form>
       <div className="flex justify-between mt-7">
         <span className="text-red-700 cursor-pointer">Delete Account</span>
         <span className="text-red-700 cursor-pointer">Sign Out</span>
       </div>
+      <p className="text-red-700">{error ? error : ""}</p>
+      <p className="text-green-700 font-semibold">{updateSuccess ? "Profile updated successfully" : ""}</p>
     </div>
   );
 }
