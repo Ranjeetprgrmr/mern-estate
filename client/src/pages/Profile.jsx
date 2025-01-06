@@ -14,6 +14,7 @@ import {
   signOutUserFailure,
 } from "../redux/user/userSlice";
 import { Link } from "react-router-dom";
+import { set } from "mongoose";
 
 export default function Profile() {
   const fileRef = useRef(null);
@@ -198,6 +199,25 @@ export default function Profile() {
     }
   };
 
+  const handleDeleteListing = async (listingId) => {
+    try {
+      const res = await fetch(`/api/listing/delete/${listingId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success === false) {
+        console.log(data.message);
+        return;
+      }
+      // handleShowListings();
+      setShowListings(
+        showListings.filter((listing) => listing._id !== listingId)
+      );
+    } catch (error) {
+      console.error("Error:", error.message);
+    }
+  };
+
   return (
     <div className="p-3 max-w-lg mx-auto">
       <h1 className="text-3xl font-semibold text-center my-7">Profile</h1>
@@ -293,9 +313,10 @@ export default function Profile() {
       <h1 className="text-3xl font-semibold text-center mt-7">My Listings</h1>
       {showListings &&
         showListings.map((listing, index) => (
-          
-          
-          <div key={index} className="border mt-2 rounded-lg p-3 flex justify-between items-center gap-4">
+          <div
+            key={index}
+            className="border mt-2 rounded-lg p-3 flex justify-between items-center gap-4"
+          >
             <Link to={`/listing/${listing._id}`}>
               {listing.imageUrls.map((imageUrl, imageIndex) => (
                 <img
@@ -306,21 +327,23 @@ export default function Profile() {
                 />
               ))}
             </Link>
-            <Link className="text-slate-700 font-semibold flex-1 hover:underline truncate" to={`/listing/${listing._id}`}>
+            <Link
+              className="text-slate-700 font-semibold flex-1 hover:underline truncate"
+              to={`/listing/${listing._id}`}
+            >
               <p>{listing.name}</p>
             </Link>
 
             <div className="flex flex-col item-center">
-              <button className="text-red-700">
+              <button
+                onClick={() => handleDeleteListing(listing._id)}
+                className="text-red-700"
+              >
                 Delete
               </button>
-              <button className="text-green-700">
-                Edit
-              </button>
+              <button className="text-green-700">Edit</button>
             </div>
-            
           </div>
-          
         ))}
     </div>
   );
