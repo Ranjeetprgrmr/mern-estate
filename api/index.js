@@ -8,8 +8,6 @@ import authRouter from "./routes/auth.route.js";
 import userRouter from "./routes/user.route.js";
 import listingRouter from "./routes/listing.route.js";
 
-
-
 dotenv.config();
 
 mongoose
@@ -28,6 +26,9 @@ app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+
+
+
 app.use((req, res, next) => {
   console.log(req.body);
   next();
@@ -43,21 +44,12 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/listing", listingRouter);
+app.use('/api/uploads', express.static('./api/uploads'));
 
-http.createServer({
-  maxHeadersCount: 1000,
-  maxRequestsPerSocket: 1000,
-  maxRequestBodySize: 50 * 1024 * 1024, // 50MB
-});
-
-
-app.listen(3000, () => {
+const server = http.createServer(app);
+server.listen(3000, () => {
   console.log("Server listening on port 3000!!!");
 });
-
-
-
-
 
 //error middleware
 app.use((err, req, res, next) => {

@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { useRef, useState, useEffect } from "react";
-import {  uploadImage } from "../redux/user/userSlice";
+import { uploadImage } from "../redux/user/userSlice";
 import {
   updateUserStart,
   updateUserSuccess,
@@ -23,8 +23,11 @@ export default function Profile() {
   const [percentage, setPercentage] = useState(0);
   const [formData, setFormData] = useState({});
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [showListings, setShowListings] = useState([]);
+  const [showListingsError, setShowListingsError] = useState(false);
+
   const { currentUser, loading, error } = useSelector((state) => state.user);
-   console.log("this is error", error);
+  console.log("this is error", error);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -142,27 +145,58 @@ export default function Profile() {
     }
   };
 
-  const handleSignOut = async() => {
-    try{
+  const handleSignOut = async () => {
+    try {
       dispatch(signOutUserStart());
-      const res = await fetch('/api/auth/signout');
+      const res = await fetch("/api/auth/signout");
       const data = await res.json();
+      console.log("data:", data); // <--- Add this line
 
-      if(data.success === false){
+      // Inspect the data object here
+      console.log("listing object:", data[0]);
+
+      if (data.success === false) {
         dispatch(signOutUserFailure(data.message));
         return;
       }
 
       dispatch(signOutUserSuccess(data));
 
-      navigate('/sign-in');
-
-    }catch(error){
+      navigate("/sign-in");
+    } catch (error) {
       console.error("Error:", error.message);
       dispatch(signOutUserFailure(error.message));
     }
+  };
 
-  }
+  const handleShowListings = async () => {
+    try {
+      setShowListingsError(false);
+      const res = await fetch(`/api/user/listings/${currentUser._id}`);
+      const data = await res.json();
+      console.log("this is listing data:", data); // <--- Add this line
+      // Inspect the data object here
+      console.log("this is listing object:", data);
+
+      // const basePath = "/api/"; // <--- Add this line
+
+      if (data.success === false) {
+        setShowListingsError(true);
+        return;
+      }
+      // setShowListings(
+      //   data.map((listing) => {
+      //     const images = listing.imageUrls.map((imageUrl) => {
+      //       return { url: imageUrl };
+      //     });
+      //     return { ...listing, images };
+      //   })
+      // );
+      setShowListings(data);
+    } catch (error) {
+      setShowListingsError(true);
+    }
+  };
 
   return (
     <div className="p-3 max-w-lg mx-auto">
@@ -222,16 +256,72 @@ export default function Profile() {
         >
           {loading ? "Loading..." : "Update"}
         </button>
-        <Link className="bg-green-700 text-white rounded-lg p-3 uppercase hover:opacity-95 text-center" to="/create-listing">
-         Create Listing
+        <Link
+          className="bg-green-700 text-white rounded-lg p-3 uppercase hover:opacity-95 text-center"
+          to="/create-listing"
+        >
+          Create Listing
         </Link>
       </form>
       <div className="flex justify-between mt-7">
-        <span onClick={handleDeleteUser} className="text-red-700 cursor-pointer">Delete Account</span>
-        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">Sign Out</span>
+        <span
+          onClick={handleDeleteUser}
+          className="text-red-700 cursor-pointer"
+        >
+          Delete Account
+        </span>
+        <span onClick={handleSignOut} className="text-red-700 cursor-pointer">
+          Sign Out
+        </span>
       </div>
       <p className="text-red-700">{error ? error : ""}</p>
-      <p className="text-green-700 font-semibold">{updateSuccess ? "Profile updated successfully" : ""}</p>
+      <p className="text-green-700 font-semibold">
+        {updateSuccess ? "Profile updated successfully" : ""}
+      </p>
+      <div className="flex justify-between">
+        <button
+          onClick={handleShowListings}
+          className="bg-green-700 text-white rounded-lg p-3 uppercase hover:opacity-95
+        text-center mx-auto mt-7"
+        >
+          Show Listings
+        </button>
+        <p className="text-red-700 mt-5">
+          {showListingsError ? "Error showing listings" : ""}
+        </p>
+      </div>
+      <h1 className="text-3xl font-semibold text-center mt-7">My Listings</h1>
+      {showListings &&
+        showListings.map((listing, index) => (
+          
+          
+          <div key={index} className="border mt-2 rounded-lg p-3 flex justify-between items-center gap-4">
+            <Link to={`/listing/${listing._id}`}>
+              {listing.imageUrls.map((imageUrl, imageIndex) => (
+                <img
+                  src={imageUrl}
+                  key={imageIndex}
+                  alt={listing.cover}
+                  className="h-16 w-16 object-contain"
+                />
+              ))}
+            </Link>
+            <Link className="text-slate-700 font-semibold flex-1 hover:underline truncate" to={`/listing/${listing._id}`}>
+              <p>{listing.name}</p>
+            </Link>
+
+            <div className="flex flex-col item-center">
+              <button className="text-red-700">
+                Delete
+              </button>
+              <button className="text-green-700">
+                Edit
+              </button>
+            </div>
+            
+          </div>
+          
+        ))}
     </div>
   );
 }

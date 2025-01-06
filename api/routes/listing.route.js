@@ -5,6 +5,6 @@ import { upload } from '../utils/upload.js';
 
 const router = express.Router();
 
-router.post('/create', verifyToken, upload().array('imageUrls', 6), createListing);
+router.post('/create', verifyToken,  upload().array('imageUrls', 6), createListing);
 
 export default router;

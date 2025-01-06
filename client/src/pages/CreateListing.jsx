@@ -145,7 +145,8 @@ export default function CreateListing() {
         setError(data.message);
         return;
       }
-      console.log(data);
+      console.log('this is data',data);
+  
       navigate(`/listing/${data._id}`);
     } catch (error) {
       console.log(error);
