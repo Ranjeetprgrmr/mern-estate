@@ -23,11 +23,8 @@ const app = express();
 
 app.use(cookieParser());
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
-
-
+app.use(express.json({ limit: false }));
+app.use(express.urlencoded({ limit: false, extended: true }));
 
 app.use((req, res, next) => {
   console.log(req.body);
@@ -45,6 +42,12 @@ app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/listing", listingRouter);
 app.use('/api/uploads', express.static('./api/uploads'));
+
+app.get('/uploads/:filename', (req, res) => {
+  const filename = req.params.filename;
+  const filePath = `uploads/${filename}`;
+  res.sendFile(filePath);
+});
 
 const server = http.createServer(app);
 server.listen(3000, () => {

@@ -178,8 +178,7 @@ export default function Profile() {
       console.log("this is listing data:", data); // <--- Add this line
       // Inspect the data object here
       console.log("this is listing object:", data);
-
-      // const basePath = "/api/"; // <--- Add this line
+      
 
       if (data.success === false) {
         setShowListingsError(true);
@@ -187,7 +186,9 @@ export default function Profile() {
       }
       // setShowListings(
       //   data.map((listing) => {
+      //     console.log('this is listing imageUrls:', listing.imageUrls);
       //     const images = listing.imageUrls.map((imageUrl) => {
+      //       console.log('this is imageUrl:', imageUrl); // <--- ADD THIS LINE
       //       return { url: imageUrl };
       //     });
       //     return { ...listing, images };
@@ -318,15 +319,20 @@ export default function Profile() {
             className="border mt-2 rounded-lg p-3 flex justify-between items-center gap-4"
           >
             <Link to={`/listing/${listing._id}`}>
+          
               {listing.imageUrls.map((imageUrl, imageIndex) => (
-                <img
-                  src={imageUrl}
-                  key={imageIndex}
-                  alt={listing.cover}
-                  className="h-16 w-16 object-contain"
-                />
+              <img
+              src={imageUrl}
+              key={imageUrl}
+              alt={`Image ${imageIndex + 1}`}
+              className="h-16 w-16 object-contain"
+              onError={(e) => console.error(`Error loading image ${imageUrl}:`, e)}
+              onLoad={(e) => console.log(`Image ${imageUrl} loaded successfully`)}
+            />
               ))}
+           
             </Link>
+          
             <Link
               className="text-slate-700 font-semibold flex-1 hover:underline truncate"
               to={`/listing/${listing._id}`}
@@ -341,7 +347,9 @@ export default function Profile() {
               >
                 Delete
               </button>
-              <button className="text-green-700">Edit</button>
+              <Link to={`/update-listing/${listing._id}`}>
+                <button className="text-green-700">Edit</button>
+              </Link>
             </div>
           </div>
         ))}

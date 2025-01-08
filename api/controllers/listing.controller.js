@@ -1,5 +1,6 @@
 import Listing from "../models/listing.model.js";
 import { errorHandler } from "../utils/error.js";
+import path from "path";
 
 export const createListing = async (req, res, next) => {
   try {
@@ -33,26 +34,53 @@ export const createListing = async (req, res, next) => {
 
 export const deleteListing = async (req, res, next) => {
   const listing = await Listing.findByIdAndDelete(req.params.id);
-  if(!listing) return next(errorHandler(404, "Listing not found"));
-  if(req.user.id !== listing.userRef) return next(errorHandler(403, "You can only delete your listing"));
-  try{
+  if (!listing) return next(errorHandler(404, "Listing not found"));
+  if (req.user.id !== listing.userRef)
+    return next(errorHandler(403, "You can only delete your listing"));
+  try {
     await Listing.findByIdAndDelete(req.params.id);
     res.status(200).json("Listing has been deleted...");
-
-  }catch(error){
+  } catch (error) {
     next(error);
   }
-  
 };
 
 export const updateListing = async (req, res, next) => {
+  // console.log('this is req.files:', req.files);
   const listing = await Listing.findById(req.params.id);
-  if(!listing) return next(errorHandler(404, "Listing not found"));
-  if(req.user.id !== listing.userRef) return next(errorHandler(403, "You can only update your listing"));
-  try{
-    const updatedListing = await Listing.findByIdAndUpdate(req.params.id, req.body, {new: true});
+  if (!listing) return next(errorHandler(404, "Listing not found"));
+  if (req.user.id !== listing.userRef)
+    return next(errorHandler(403, "You can only update your listing"));
+  try {
+    let imageUrls = listing.imageUrls || [];
+    if (req.files) {
+      const newImage = req.files[req.files.length - 1];
+      imageUrls.push(newImage.path); // Append the new file path to the existing array
+    }
+
+    const updatedListing = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { $set: { imageUrls } },
+      { new: true }
+    );
+
     res.status(200).json(updatedListing);
-  }catch(error){
+  } catch (error) {
     next(error);
   }
-}
+};
+
+export const getListing = async (req, res, next) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) return next(errorHandler(404, "Listing not found"));
+
+    // Construct the correct URL for each image
+    listing.imageUrls = listing.imageUrls.map((url) => {
+      return `${req.protocol}://${req.get("host")}/api/uploads/${url}`;
+    });
+    res.status(200).json(listing);
+  } catch (error) {
+    next(error);
+  }
+};
