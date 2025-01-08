@@ -53,9 +53,11 @@ export const updateListing = async (req, res, next) => {
     return next(errorHandler(403, "You can only update your listing"));
   try {
     let imageUrls = listing.imageUrls || [];
-    if (req.files) {
+    if (req.files && req.files.length > 0) {
       const newImage = req.files[req.files.length - 1];
-      imageUrls.push(newImage.path); // Append the new file path to the existing array
+      if (newImage) {
+        imageUrls.push(newImage.path); // Append the new file path to the existing array
+      }
     }
 
     const updatedListing = await Listing.findByIdAndUpdate(
