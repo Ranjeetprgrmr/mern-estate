@@ -62,7 +62,7 @@ export const updateListing = async (req, res, next) => {
 
     const updatedListing = await Listing.findByIdAndUpdate(
       req.params.id,
-      { $set: { imageUrls } },
+      { $set: { ...req.body, imageUrls } },
       { new: true }
     );
 

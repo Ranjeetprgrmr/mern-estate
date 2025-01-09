@@ -137,8 +137,6 @@ export default function CreateListing() {
       setLoading(true);
       setError(false);
 
-      console.log("params.listingId:", params.listingId);
-
       const formDataToSend = new FormData();
   
       formDataToSend.append("userRef", currentUser._id);
@@ -148,7 +146,11 @@ export default function CreateListing() {
           formDataToSend.append(key, formData[key]);
         }
       });
-
+      // Object.entries(formData).forEach(([key, value]) => {
+      //   if (key !== "imageUrls" && key !== "userRef") {
+      //     formDataToSend.append(key, value);
+      //   }
+      // });
       
     // Append images to the formDataToSend
     files.forEach((file) => {
