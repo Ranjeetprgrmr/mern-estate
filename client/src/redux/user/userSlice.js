@@ -4,7 +4,7 @@ const initialState = {
   currentUser: null,
   error: null,
   loading: false,
-  image: null, // add this line to store the uploaded image
+  userImage: null, // add this line to store the uploaded image
 };
 
 const userSlice = createSlice({
@@ -15,8 +15,10 @@ const userSlice = createSlice({
       state.loading = true;
     },
     signInSuccess: (state, action) => {
+    
       state.loading = false;
       state.currentUser = action.payload;
+      state.userImage = action.payload.avatar;
       state.error = null;
     },
     signInFailure: (state, action) => {
@@ -24,7 +26,7 @@ const userSlice = createSlice({
       state.error = action.payload;
     },
     uploadImage: (state, action) => {
-      state.image = action.payload;
+      state.userImage = action.payload;
     },
     updateUserStart: (state) => {
       state.loading = true;
@@ -57,6 +59,7 @@ const userSlice = createSlice({
       state.currentUser = null;
       state.loading = false;
       state.error = null;
+      state.userImage = null; // add this line to clear the image state
     },
     signOutUserFailure: (state, action) => {
       state.error = action.payload;

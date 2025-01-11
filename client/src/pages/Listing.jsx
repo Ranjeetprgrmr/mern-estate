@@ -108,31 +108,40 @@ export default function Listing() {
               </p>
               {listing.offer && (
                 <p className="bg-green-900 w-full max-w-[200px] text-white text-center p-1 rounded-md">
-                  Discounts - 
-                  ${+listing.regularPrice - +listing.discountPrice}
+                  Discounts - ${+listing.regularPrice - +listing.discountPrice}
                 </p>
               )}
             </div>
             <p className="max-w-4xl mx-auto p-3 my-7 text-slate-800">
-              <span className="font-semibold text-black">
-                  Description - {' '} 
-              </span>
+              <span className="font-semibold text-black">Description - </span>
               {listing.description}
             </p>
             <ul className="text-green-900 font-semibold text-sm flex flex-wrap gap-4 items-center sm:gap-6">
-              <li className="flex items-center gap-1 whitespace-nowrap "><FaBed className="text-lg" />
-              {listing.bedrooms > 1 ? `${listing.bedrooms} beds` : "1 bed"}
+              <li className="flex items-center gap-1 whitespace-nowrap ">
+                <FaBed className="text-lg" />
+                {listing.bedrooms > 1 ? `${listing.bedrooms} beds` : "1 bed"}
               </li>
-              <li className="flex items-center gap-1 whitespace-nowrap "><FaBath className="text-lg" />
-              {listing.bathrooms > 1 ? `${listing.bathrooms} baths` : "1 bathroom"}
+              <li className="flex items-center gap-1 whitespace-nowrap ">
+                <FaBath className="text-lg" />
+                {listing.bathrooms > 1
+                  ? `${listing.bathrooms} baths`
+                  : "1 bathroom"}
               </li>
-              <li className="flex items-center gap-1 whitespace-nowrap "><FaParking className="text-lg" />
-              {listing.parking ? "Parking spot" : "No parking"}
+              <li className="flex items-center gap-1 whitespace-nowrap ">
+                <FaParking className="text-lg" />
+                {listing.parking ? "Parking spot" : "No parking"}
               </li>
-              <li className="flex items-center gap-1 whitespace-nowrap "><FaChair className="text-lg" />
-              {listing.furnished ? "Furnished" : "Not furnished"}
+              <li className="flex items-center gap-1 whitespace-nowrap ">
+                <FaChair className="text-lg" />
+                {listing.furnished ? "Furnished" : "Not furnished"}
               </li>
             </ul>
+            {currentUser && listing.userRef !== currentUser._id && (
+              <button className="bg-slate-700 text-white rounded-lg uppercase hover:opacity-95">
+                Contact LandLord
+              </button>
+            )}
+            {contact && <Contact />}
           </div>
         </>
       )}

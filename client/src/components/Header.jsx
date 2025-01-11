@@ -6,13 +6,15 @@ import { uploadImage } from "../redux/user/userSlice";
 
 export default function Header() {
   const dispatch = useDispatch();
-  const { currentUser, image } = useSelector((state) => state.user);
+  const [image, setImage] = useState(null);
+  const { currentUser, userImage } = useSelector((state) => state.user);
 
   useEffect(() => {
-    const storedImage = localStorage.getItem("image");
+    const storedImage = localStorage.getItem("avatar");
+    console.log("storedImage", storedImage);
     if (storedImage) {
       dispatch(uploadImage(storedImage));
-    } 
+    }
   }, []);
 
   return (
@@ -47,8 +49,9 @@ export default function Header() {
           <Link to="/profile">
             {currentUser ? (
               <img
+                key={userImage}
                 className="w-9 h-9 rounded-full"
-                src={image || currentUser.avatar}
+                src={image || userImage || currentUser.otherDetails.avatar}
                 alt="profile"
               />
             ) : (

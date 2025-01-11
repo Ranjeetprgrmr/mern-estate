@@ -14,11 +14,10 @@ import {
   signOutUserFailure,
 } from "../redux/user/userSlice";
 import { Link } from "react-router-dom";
-import { set } from "mongoose";
 
 export default function Profile() {
   const fileRef = useRef(null);
-  // const [file, setFile] = useState(undefined);
+  const [file, setFile] = useState(undefined);
   const [image, setImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [percentage, setPercentage] = useState(0);
@@ -27,25 +26,71 @@ export default function Profile() {
   const [showListings, setShowListings] = useState([]);
   const [showListingsError, setShowListingsError] = useState(false);
 
-  const { currentUser, loading, error } = useSelector((state) => state.user);
-  console.log("this is error", error);
+  const { currentUser, loading, error, userImage } = useSelector(
+    (state) => state.user
+  );
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedImage = localStorage.getItem("image");
+    const storedImage = localStorage.getItem("avatar");
     if (storedImage) {
       setImage(storedImage);
     }
   }, []);
+
+  useEffect(() => {
+    if (!currentUser || !currentUser.id) return;
+    const fetchImage = async () => {
+      try {
+        const response = await fetch(
+          `/api/uploads/${currentUser.otherDetails.avatar.split("/").pop()}`
+        );
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64Image = reader.result;
+          setImage(base64Image);
+          localStorage.setItem(`avatar-${currentUser.id}`, base64Image);
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Error fetching image:", error);
+      }
+    };
+  
+    // Check if the image is already stored in local storage
+    const storedImage = localStorage.getItem(`avatar-${currentUser.id}`);
+    if (storedImage) {
+      setImage(storedImage);
+    } else {
+      fetchImage();
+    }
+  }, [currentUser]);
+
+
+ 
+
+
   const handleImageChange = async (e) => {
     setIsUploading(true);
     const file = e.target.files[0];
+    setImage(file); // store the selected file in the image state variable
+
     const reader = new FileReader();
-    let imageData;
+
+    reader.onloadstart = () => {
+      setPercentage(0);
+    };
+
+    reader.onprogress = (e) => {
+      const progress = (e.loaded / e.total) * 100;
+      setPercentage(progress);
+    };
 
     reader.onload = () => {
-      imageData = reader.result;
+      const imageData = reader.result;
       setImage(imageData);
       localStorage.setItem("avatar", imageData);
       dispatch(uploadImage(imageData));
@@ -55,19 +100,15 @@ export default function Profile() {
       }, 500); // Delay to simulate upload time
 
       // Update formData with the new image
-      setFormData({ ...formData, avatar: imageData });
+      setFormData({ ...formData, avatar: file });
     };
-    reader.onprogress = (e) => {
-      const progress = (e.loaded / e.total) * 100;
-      setPercentage(progress);
-    };
+
     reader.readAsDataURL(file);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
-  console.log("this is formData", formData);
 
   //   Yes, this code snippet answers my previous question
   // The fact that the access_token is being set as a cookie with the httpOnly flag set to true means that the cookie will be sent with every request to the server, including the fetch request.
@@ -92,18 +133,38 @@ export default function Profile() {
   // Does that make sense?
 
   const handleSubmit = async (e) => {
+    console.log("handle submit tridderd");
     e.preventDefault();
+
     try {
-      const avatar = localStorage.getItem("avatar");
-      const data = { ...formData, avatar };
+      if (!currentUser || !currentUser.otherDetails._id) {
+        console.error(
+          "currentUser or currentUser.otherDetails._id is undefined"
+        );
+      }
+      const formData = new FormData();
+      formData.append("username", e.target.username.value);
+      formData.append("email", e.target.email.value);
+      if (e.target.password.value) {
+        formData.append("password", e.target.password.value);
+      }
+      // image state variable contains a base64-encoded string, which is not a file. When you append it to the FormData object, it's being treated as a string, not a file.
+      // To fix this, you need to convert the base64-encoded string back to a file before appending it to the FormData object. You can use the btoa function to convert the string to a blob, and then append the blob to the FormData object.
+      if (image) {
+        console.log("this is image", image);
+        const blob = new Blob([image], { type: "image/jpeg" });
+        formData.append("avatar", blob);
+      }
+
       dispatch(updateUserStart());
-      const res = await fetch(`/api/user/update/${currentUser._id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      console.log("this is currentUser:", currentUser.otherDetails._id);
+      const res = await fetch(
+        `/api/user/update/${currentUser.otherDetails._id}`,
+        {
+          method: "PUT",
+          body: formData,
+        }
+      );
       // If the API returns a 401 Unauthorized response, this code will catch it and dispatch the updateUserFailure action.
       if (!res.ok) {
         const responseData = await res.json();
@@ -139,6 +200,7 @@ export default function Profile() {
         return;
       }
       dispatch(deleteUserSuccess(data));
+
       navigate("/sign-in");
     } catch (error) {
       console.error("Error:", error.message);
@@ -162,6 +224,9 @@ export default function Profile() {
       }
 
       dispatch(signOutUserSuccess(data));
+      dispatch(deleteUserSuccess()); // Clear the currentUser state
+      // // Clear the image data from local storage
+      // localStorage.removeItem("avatar");
 
       navigate("/sign-in");
     } catch (error) {
@@ -178,7 +243,6 @@ export default function Profile() {
       console.log("this is listing data:", data); // <--- Add this line
       // Inspect the data object here
       console.log("this is listing object:", data);
-      
 
       if (data.success === false) {
         setShowListingsError(true);
@@ -231,7 +295,8 @@ export default function Profile() {
           accept="image/*"
         />
         <img
-          src={image || currentUser.avatar}
+          // src={userImage || currentUser.otherDetails.avatar}
+          src={image || userImage || currentUser.otherDetails.avatar}
           alt="select profile picture"
           className="h-24 w-24 self-center cursor-pointer rounded-full object-cover mt-2"
           onClick={() => fileRef.current.click()}
@@ -269,10 +334,11 @@ export default function Profile() {
           placeholder="password"
           className="border p-3 rounded-lg"
           id="password"
+          value={formData.password || (currentUser.password && !e.target.value)}
           onChange={handleChange}
         />
         <button
-          disable={loading}
+          disabled={loading}
           className="bg-slate-700 text-white rounded-lg p-3 uppercase hover:opacity-95 disables:opacity-80"
         >
           {loading ? "Loading..." : "Update"}
@@ -319,20 +385,22 @@ export default function Profile() {
             className="border mt-2 rounded-lg p-3 flex justify-between items-center gap-4"
           >
             <Link to={`/listing/${listing._id}`}>
-          
               {listing.imageUrls.map((imageUrl, imageIndex) => (
-              <img
-              src={imageUrl}
-              key={imageUrl}
-              alt={`Image ${imageIndex + 1}`}
-              className="h-16 w-16 object-contain"
-              onError={(e) => console.error(`Error loading image ${imageUrl}:`, e)}
-              onLoad={(e) => console.log(`Image ${imageUrl} loaded successfully`)}
-            />
+                <img
+                  src={imageUrl}
+                  key={imageUrl}
+                  alt={`Image ${imageIndex + 1}`}
+                  className="h-16 w-16 object-contain"
+                  onError={(e) =>
+                    console.error(`Error loading image ${imageUrl}:`, e)
+                  }
+                  onLoad={(e) =>
+                    console.log(`Image ${imageUrl} loaded successfully`)
+                  }
+                />
               ))}
-           
             </Link>
-          
+
             <Link
               className="text-slate-700 font-semibold flex-1 hover:underline truncate"
               to={`/listing/${listing._id}`}

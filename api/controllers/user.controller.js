@@ -2,6 +2,12 @@ import bcryptjs from "bcryptjs";
 import User from "../models/user.model.js";
 import { errorHandler } from "../utils/error.js";
 import Listing from "../models/listing.model.js";
+import multer from "multer";
+
+const upload = multer({
+  dest: "./uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 export const test = (req, res) => {
   res.json({
@@ -10,29 +16,49 @@ export const test = (req, res) => {
 };
 
 export const updateUser = async (req, res, next) => {
+
+  console.log('req.params', req.params);
+  console.log('req.user.id', req.user.id);
+  console.log('req.params.id', req.params.id);
+  if (!req.user || !req.params.id) {
+    return next(errorHandler(400, "Invalid request"));
+  }
   try {
     if (req.user.id !== req.params.id) {
       return next(errorHandler(403, "You can only update your account!"));
     }
 
-    if (req.body.password) {
-      req.body.password = await bcryptjs.hash(req.body.password, 10);
+    const updateData = {};
+
+    if (req.body.username) {
+      updateData.username = req.body.username;
+    }
+
+    if (req.body.email) {
+      updateData.email = req.body.email;
+    }
+
+    if (req.body.password && req.body.password !== '') {
+      updateData.password = await bcryptjs.hash(req.body.password, 10);
+    }
+
+    if (req.file && req.file.fieldname === 'avatar') {
+      const avatar = req.file;
+      const avatarPath = avatar.path;
+      updateData.avatar = avatarPath;
+     
     }
 
     const updateUser = await User.findByIdAndUpdate(
       req.params.id,
       {
-        $set: {
-          username: req.body.username,
-          email: req.body.email,
-          password: req.body.password,
-          avatar: req.body.avatar,
-        },
+        $set: updateData
       },
       { new: true }
     );
 
     const { password, ...otherDetails } = updateUser._doc;
+  
 
     res.status(200).json(otherDetails);
   } catch (error) {
@@ -53,7 +79,6 @@ export const deleteUser = async (req, res, next) => {
     next(error);
   }
 };
-
 
 export const getUserListings = async (req, res, next) => {
   if (req.user.id === req.params.id) {
