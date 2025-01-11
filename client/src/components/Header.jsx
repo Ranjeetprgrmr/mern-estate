@@ -15,7 +15,7 @@ export default function Header() {
     if (storedImage) {
       dispatch(uploadImage(storedImage));
     }
-  }, []);
+  }, [currentUser]);
 
   return (
     <header className="bg-slate-200 shadow-md">

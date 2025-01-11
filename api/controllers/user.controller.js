@@ -16,10 +16,9 @@ export const test = (req, res) => {
 };
 
 export const updateUser = async (req, res, next) => {
-
-  console.log('req.params', req.params);
-  console.log('req.user.id', req.user.id);
-  console.log('req.params.id', req.params.id);
+  console.log("req.params", req.params);
+  console.log("req.user.id", req.user.id);
+  console.log("req.params.id", req.params.id);
   if (!req.user || !req.params.id) {
     return next(errorHandler(400, "Invalid request"));
   }
@@ -38,27 +37,25 @@ export const updateUser = async (req, res, next) => {
       updateData.email = req.body.email;
     }
 
-    if (req.body.password && req.body.password !== '') {
+    if (req.body.password && req.body.password !== "") {
       updateData.password = await bcryptjs.hash(req.body.password, 10);
     }
 
-    if (req.file && req.file.fieldname === 'avatar') {
+    if (req.file && req.file.fieldname === "avatar") {
       const avatar = req.file;
       const avatarPath = avatar.path;
       updateData.avatar = avatarPath;
-     
     }
 
     const updateUser = await User.findByIdAndUpdate(
       req.params.id,
       {
-        $set: updateData
+        $set: updateData,
       },
       { new: true }
     );
 
     const { password, ...otherDetails } = updateUser._doc;
-  
 
     res.status(200).json(otherDetails);
   } catch (error) {
@@ -90,5 +87,19 @@ export const getUserListings = async (req, res, next) => {
     }
   } else {
     return next(errorHandler(403, "You can only view your account!"));
+  }
+};
+
+export const getUser = async (req, res, next) => {
+  try {
+    // const user = await User.findById(req.params.id).lean();
+    const user = await User.findById(req.params.id);
+
+    if (!user) return next(errorHandler(404, "User not found"));
+
+    const { password: pass, ...otherDetails } = user._doc;
+    res.status(200).json(otherDetails);
+  } catch (error) {
+    next(error);
   }
 };
