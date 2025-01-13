@@ -6,19 +6,11 @@ import { uploadImage } from "../redux/user/userSlice";
 import { useNavigate } from "react-router-dom";
 
 export default function Header() {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   const [image, setImage] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { currentUser, userImage } = useSelector((state) => state.user);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const storedImage = localStorage.getItem("avatar");
-    console.log("storedImage", storedImage);
-    if (storedImage) {
-      dispatch(uploadImage(storedImage));
-    }
-  }, [currentUser]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -70,13 +62,18 @@ export default function Header() {
           </Link>
 
           <Link to="/profile">
-            {currentUser ? (
+            {currentUser && userImage ? (
+              
+              console.log('Image src:', image || userImage || currentUser.otherDetails.avatar),
               <img
                 key={userImage}
-                className="w-9 h-9 rounded-full"
-                src={image || userImage || currentUser.otherDetails.avatar}
-                alt="profile"
+                src={image ? URL.createObjectURL(image) : userImage || currentUser.otherDetails.avatar}
+                alt="User"
+                className="w-10 h-10 rounded-full"
+                onError={(e) => console.error('Error loading image:', e)}
+             
               />
+              
             ) : (
               <li className="hidden sm:inline text-slate-700 hover:underline">
                 Sign in

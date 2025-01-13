@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { uploadImage } from "../redux/user/userSlice";
 import {
   updateUserStart,
@@ -17,7 +17,6 @@ import { Link } from "react-router-dom";
 
 export default function Profile() {
   const fileRef = useRef(null);
-  const [file, setFile] = useState(undefined);
   const [image, setImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [percentage, setPercentage] = useState(0);
@@ -33,93 +32,33 @@ export default function Profile() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedImage = localStorage.getItem("avatar");
-    if (storedImage) {
-      setImage(storedImage);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!currentUser || !currentUser.id) return;
-    const fetchImage = async () => {
-      try {
-        const response = await fetch(
-          `/api/uploads/${currentUser.otherDetails.avatar.split("/").pop()}`
-        );
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onload = () => {
-          const base64Image = reader.result;
-          setImage(base64Image);
-          localStorage.setItem(`avatar-${currentUser.id}`, base64Image);
-        };
-        reader.readAsDataURL(blob);
-      } catch (error) {
-        console.error("Error fetching image:", error);
-      }
-    };
-  
-    // Check if the image is already stored in local storage
-    const storedImage = localStorage.getItem(`avatar-${currentUser.id}`);
-    if (storedImage) {
-      setImage(storedImage);
-    } else {
-      fetchImage();
-    }
-  }, [currentUser]);
-
-
- 
-
-
-  const handleImageChange = async (e) => {
-    setIsUploading(true);
+  const handleImageChange = (e) => {
+    console.log("handleImageChange called");
     const file = e.target.files[0];
-    setImage(file); // store the selected file in the image state variable
-
-    const reader = new FileReader();
-
-    reader.onloadstart = () => {
-      setPercentage(0);
+    setImage(file);
+    setFormData({
+      ...formData,
+      avatar: file,
+    });
+    const payload = {
+      ...formData,
+      avatar: file,
     };
-
-    reader.onprogress = (e) => {
-      const progress = (e.loaded / e.total) * 100;
-      setPercentage(progress);
-    };
-
-    reader.onload = () => {
-      const imageData = reader.result;
-      setImage(imageData);
-      localStorage.setItem("avatar", imageData);
-      dispatch(uploadImage(imageData));
-      setPercentage(100); // Ensure progress is set to 100% on load
-      setTimeout(() => {
-        setIsUploading(false); // Hide the upload indicator
-      }, 500); // Delay to simulate upload time
-
-      // Update formData with the new image
-      setFormData({ ...formData, avatar: file });
-    };
-
-    reader.readAsDataURL(file);
+    dispatch(uploadImage(payload));
+    console.log("uploadImage action dispatched with payload:", payload);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
-
   //   Yes, this code snippet answers my previous question
   // The fact that the access_token is being set as a cookie with the httpOnly flag set to true means that the cookie will be sent with every request to the server, including the fetch request.
   // And, as you mentioned, the verifyToken middleware will be able to verify the access_token from the cookie and authenticate the user, even though the access_token is not being explicitly included in the fetch request.
   // So, to answer my previous question: YES, that is correct! The cookie is being sent with the request and is being used to authenticate the user, which is why the access_token doesn't need to be explicitly included in the fetch request.
-
   // If you mention the access_token in your fetch request, and it still says "invalid token", it's likely because the token is being sent in a different way than what the server is expecting.
   // When you set the access_token as a cookie, the server expects to receive it as a cookie in the request headers. However, if you explicitly include the access_token in the fetch request, it's being sent as a separate header or parameter, which might not be what the server is expecting.
   // In this case, the server might be rejecting the token because it's not being sent in the expected way. It's like the server is saying, "Hey, I'm expecting the token to be sent as a cookie, but you're sending it as a separate header. I don't recognize this token!"
   // To fix this, you can try removing the explicit mention of the access_token from your fetch request, and let the cookie be sent automatically with the request. This should allow the server to recognize the token and authenticate the user correctly.
-
   // I see what you're getting at now.
   // Yes, that's correct. The access_token is being sent from the client-side as a cookie, and that's why you don't need to mention it explicitly in the handleSubmit function.
   // When you set the access_token cookie on the server-side using res.cookie("access_token", token, { ... }), the cookie is being stored on the client-side (i.e., in the user's browser).
@@ -131,7 +70,6 @@ export default function Profile() {
   // When you make a subsequent request from the client-side, the cookie is automatically sent along with the request.
   // You don't need to explicitly mention the access_token in the handleSubmit function because it's already being sent as a cookie with the request.
   // Does that make sense?
-
   const handleSubmit = async (e) => {
     console.log("handle submit tridderd");
     e.preventDefault();
@@ -148,14 +86,10 @@ export default function Profile() {
       if (e.target.password.value) {
         formData.append("password", e.target.password.value);
       }
-      // image state variable contains a base64-encoded string, which is not a file. When you append it to the FormData object, it's being treated as a string, not a file.
-      // To fix this, you need to convert the base64-encoded string back to a file before appending it to the FormData object. You can use the btoa function to convert the string to a blob, and then append the blob to the FormData object.
       if (image) {
-        console.log("this is image", image);
-        const blob = new Blob([image], { type: "image/jpeg" });
-        formData.append("avatar", blob);
+        formData.append("avatar", image);
       }
-
+      console.log("image", image);
       dispatch(updateUserStart());
       console.log("this is currentUser:", currentUser.otherDetails._id);
       const res = await fetch(
@@ -179,7 +113,9 @@ export default function Profile() {
         dispatch(updateUserFailure(responseData.message));
         return;
       }
+
       dispatch(updateUserSuccess(responseData));
+
       setUpdateSuccess(true);
     } catch (error) {
       console.error("Error:", error.message);
@@ -295,8 +231,11 @@ export default function Profile() {
           accept="image/*"
         />
         <img
-          // src={userImage || currentUser.otherDetails.avatar}
-          src={image || userImage || currentUser.otherDetails.avatar}
+          src={
+            image
+              ? URL.createObjectURL(image)
+              : userImage || currentUser.otherDetails.avatar
+          }
           alt="select profile picture"
           className="h-24 w-24 self-center cursor-pointer rounded-full object-cover mt-2"
           onClick={() => fileRef.current.click()}
@@ -308,9 +247,6 @@ export default function Profile() {
               style={{ width: `${percentage}%` }}
             ></div>
             <span className="text-gray-500 text-xs">{percentage}%</span>
-            {/* <span className="text-gray-500 text-xs absolute right-0 top-0 mt-2">
-              {percentage}%
-            </span> */}
           </div>
         )}
         <input

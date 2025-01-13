@@ -46,7 +46,7 @@ export const updateUser = async (req, res, next) => {
       const avatarPath = avatar.path;
       updateData.avatar = avatarPath;
     }
-
+ 
     const updateUser = await User.findByIdAndUpdate(
       req.params.id,
       {

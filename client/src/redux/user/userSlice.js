@@ -15,10 +15,11 @@ const userSlice = createSlice({
       state.loading = true;
     },
     signInSuccess: (state, action) => {
-    
+      console.log("action.payload:", action.payload);
       state.loading = false;
       state.currentUser = action.payload;
-      state.userImage = action.payload.avatar;
+      state.userImage = action.payload.otherDetails.avatar;
+      console.log("currentUser:", state.currentUser);
       state.error = null;
     },
     signInFailure: (state, action) => {
@@ -26,14 +27,17 @@ const userSlice = createSlice({
       state.error = action.payload;
     },
     uploadImage: (state, action) => {
+      console.log("action.payload of uploadImage:", action.payload);
       state.userImage = action.payload;
     },
     updateUserStart: (state) => {
       state.loading = true;
     },
     updateUserSuccess: (state, action) => {
+      console.log('updateUserSuccess action dispatched with payload:', action.payload);
       state.loading = false;
       state.currentUser = action.payload;
+      state.userImage = action.payload.avatar; // add this line
       state.error = null;
     },
     updateUserFailure: (state, action) => {

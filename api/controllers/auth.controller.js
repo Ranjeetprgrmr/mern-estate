@@ -25,7 +25,6 @@ export const signup = async (req, res, next) => {
 };
 
 export const signin = async (req, res, next) => {
-  
   const { email, password } = req.body;
   try {
     const validUser = await User.findOne({ email });
@@ -38,6 +37,7 @@ export const signin = async (req, res, next) => {
     }
     const token = jwt.sign({ id: validUser._id }, process.env.JWT_SECRET);
     const { password: pass, ...otherDetails } = validUser._doc;
+
     res
       .cookie("access_token", token, {
         httpOnly: true,
@@ -50,6 +50,7 @@ export const signin = async (req, res, next) => {
         message: "User logged in successfully",
         // user: validUser,
         otherDetails,
+        
       });
   } catch (error) {
     next(error);
@@ -94,11 +95,10 @@ export const google = async (req, res, next) => {
 };
 
 export const signOut = (req, res) => {
-  try{
+  try {
     res.clearCookie("access_token");
     res.status(200).json("User has been logged out!");
-
-  }catch(error){
+  } catch (error) {
     next(error);
   }
-}
+};
